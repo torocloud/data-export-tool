@@ -1,0 +1,270 @@
+{
+    "input": [
+        {
+            "name": "file_type",
+            "alias": "file-type",
+            "choices": [
+                "JSON",
+                "XML"
+            ]
+        },
+        {
+            "name": "multipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        }
+    ],
+    "output": [
+        {
+            "name": "responseMultipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        },
+        {
+            "name": "apiResponse",
+            "type": "model",
+            "reference": "io.toro.martini.api.APIResponse"
+        },
+        {
+            "name": "responseCode",
+            "type": "integer",
+            "defaultValue": 200
+        }
+    ],
+    "steps": [
+        {
+            "type": "block",
+            "blockType": "TRY_CATCH",
+            "children": [
+                {
+                    "type": "invokeCode",
+                    "declare": [
+                        {
+                            "variables": [
+                                {
+                                    "name": "martiniPackage",
+                                    "type": "object",
+                                    "comments": "the current context's package",
+                                    "objectClassName": "io.toro.martini.ipackage.MartiniPackage"
+                                },
+                                {
+                                    "name": "fileObject",
+                                    "type": "object",
+                                    "objectClassName": "java.io.File"
+                                },
+                                {
+                                    "name": "modelToWrite",
+                                    "type": "model",
+                                    "allowExtraProperties": true
+                                }
+                            ]
+                        }
+                    ],
+                    "className": "io.toro.martini.GroovyMethods",
+                    "methodName": "getPackage",
+                    "outputs": [
+                        {
+                            "from": [
+                                "output"
+                            ],
+                            "to": [
+                                "martiniPackage"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "fork",
+                    "expression": "!(file_type in ['JSON', 'XML']) || file_type.isEmpty()",
+                    "children": [
+                        {
+                            "type": "block",
+                            "label": "true",
+                            "children": [
+                                {
+                                    "lines": [
+                                        {
+                                            "type": "set",
+                                            "expression": "\"Unsupported file type: ${file_type}, file-type header must be JSON or XML\"",
+                                            "evaluate": true,
+                                            "to": [
+                                                "apiResponse",
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "ERROR",
+                                            "evaluate": true,
+                                            "to": [
+                                                "apiResponse",
+                                                "result"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "400",
+                                            "to": [
+                                                "responseCode"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "break",
+                                    "expression": "$gloopService"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "block",
+                            "label": "false",
+                            "children": [
+                                {
+                                    "type": "fork",
+                                    "expression": "file_type",
+                                    "children": [
+                                        {
+                                            "type": "invokeCode",
+                                            "label": "JSON",
+                                            "className": "io.toro.martini.JsonMethods",
+                                            "methodName": "inputStreamToGloopObject",
+                                            "parameters": [
+                                                "java.io.InputStream"
+                                            ],
+                                            "inputs": [
+                                                {
+                                                    "from": [
+                                                        "multipartFile",
+                                                        "inputStream"
+                                                    ],
+                                                    "to": [
+                                                        "jsonInputStream"
+                                                    ]
+                                                }
+                                            ],
+                                            "outputs": [
+                                                {
+                                                    "from": [
+                                                        "output"
+                                                    ],
+                                                    "to": [
+                                                        "modelToWrite"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "invokeCode",
+                                            "label": "XML",
+                                            "className": "io.toro.martini.XmlMethods",
+                                            "methodName": "streamToGloopObject",
+                                            "parameters": [
+                                                "java.io.InputStream"
+                                            ],
+                                            "inputs": [
+                                                {
+                                                    "from": [
+                                                        "multipartFile",
+                                                        "inputStream"
+                                                    ],
+                                                    "to": [
+                                                        "_xmlString"
+                                                    ]
+                                                }
+                                            ],
+                                            "outputs": [
+                                                {
+                                                    "from": [
+                                                        "output"
+                                                    ],
+                                                    "to": [
+                                                        "modelToWrite"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "gloovy",
+                    "gloovyScript": "File tmp = File.createTempFile( UUID.randomUUID().toString(), \".yml\", new File( \"${martiniPackage.getInfo().home.toString()}/resources\" ) )\n\ntmp.withWriter { out ->\n\tout.write( modelToWrite.asYaml( false, false ) )\n}\n\nfileObject = tmp\n\ntmp.deleteOnExit()"
+                },
+                {
+                    "lines": [
+                        {
+                            "type": "set",
+                            "expression": "fileObject.length()",
+                            "evaluate": true,
+                            "to": [
+                                "responseMultipartFile",
+                                "size"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "application/octet-stream",
+                            "to": [
+                                "responseMultipartFile",
+                                "contentType"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "fileObject.getName()",
+                            "evaluate": true,
+                            "to": [
+                                "responseMultipartFile",
+                                "originalFileName"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "fileObject"
+                            ],
+                            "to": [
+                                "responseMultipartFile",
+                                "inputStream"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "catch": [
+                {
+                    "type": "invokeCode",
+                    "className": "io.toro.martini.LoggerMethods",
+                    "methodName": "error",
+                    "parameters": [
+                        "java.lang.String",
+                        "java.lang.Throwable"
+                    ],
+                    "inputs": [
+                        {
+                            "from": [
+                                "$gloopException",
+                                "gloopStackTrace"
+                            ],
+                            "to": [
+                                "message"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "$gloopException",
+                                "realException"
+                            ],
+                            "to": [
+                                "throwable"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

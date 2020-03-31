@@ -1,0 +1,142 @@
+{
+    "input": [
+        {
+            "name": "_xmlInput",
+            "alias": "xmlInput",
+            "type": "model",
+            "allowExtraProperties": true
+        }
+    ],
+    "output": [
+        {
+            "name": "fileObject",
+            "type": "object",
+            "objectClassName": "java.io.File"
+        },
+        {
+            "name": "multipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        }
+    ],
+    "steps": [
+        {
+            "type": "block",
+            "blockType": "TRY_CATCH",
+            "children": [
+                {
+                    "type": "invokeCode",
+                    "declare": [
+                        {
+                            "variables": [
+                                {
+                                    "name": "martiniPackage",
+                                    "type": "object",
+                                    "comments": "the current context's package",
+                                    "objectClassName": "io.toro.martini.ipackage.MartiniPackage"
+                                },
+                                {
+                                    "name": "tmpFilename"
+                                }
+                            ]
+                        }
+                    ],
+                    "className": "io.toro.martini.GroovyMethods",
+                    "methodName": "getPackage",
+                    "outputs": [
+                        {
+                            "from": [
+                                "output"
+                            ],
+                            "to": [
+                                "martiniPackage"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "UUID.randomUUID()",
+                            "evaluate": true,
+                            "to": [
+                                "tmpFilename"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "gloovy",
+                    "gloovyScript": "File tmp = File.createTempFile( tmpFilename, \".json\", new File( \"${martiniPackage.getInfo().home.toString()}/resources\" ) )\nString jsonStringToWrite = _xmlInput.asJson( false, false )\n\ntmp.withWriter { out ->\n\tout.write( jsonStringToWrite )\n}\n\nfileObject = tmp\n\ntmpFilename = tmp.getName()\n\ntmp.deleteOnExit()"
+                },
+                {
+                    "lines": [
+                        {
+                            "from": [
+                                "fileObject"
+                            ],
+                            "to": [
+                                "multipartFile",
+                                "inputStream"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "tmpFilename"
+                            ],
+                            "to": [
+                                "multipartFile",
+                                "originalFileName"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "fileObject.length()",
+                            "evaluate": true,
+                            "to": [
+                                "multipartFile",
+                                "size"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "application/octet-stream",
+                            "to": [
+                                "multipartFile",
+                                "contentType"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "catch": [
+                {
+                    "type": "invokeCode",
+                    "className": "io.toro.martini.LoggerMethods",
+                    "methodName": "error",
+                    "parameters": [
+                        "java.lang.String",
+                        "java.lang.Throwable"
+                    ],
+                    "inputs": [
+                        {
+                            "from": [
+                                "$gloopException",
+                                "realException"
+                            ],
+                            "to": [
+                                "throwable"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "$gloopException",
+                                "gloopStackTrace"
+                            ],
+                            "to": [
+                                "message"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

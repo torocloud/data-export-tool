@@ -1,0 +1,196 @@
+{
+    "input": [
+        {
+            "name": "file_type",
+            "alias": "file-type"
+        },
+        {
+            "name": "multipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        }
+    ],
+    "output": [
+        {
+            "name": "responseMultipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        },
+        {
+            "name": "responseCode",
+            "type": "integer",
+            "defaultValue": 200
+        },
+        {
+            "name": "apiException",
+            "type": "model",
+            "comments": "to throw",
+            "reference": "io.toro.martini.api.APIException",
+            "allowExtraProperties": true
+        }
+    ],
+    "steps": [
+        {
+            "type": "block",
+            "blockType": "TRY_CATCH",
+            "children": [
+                {
+                    "type": "fork",
+                    "expression": "file_type",
+                    "children": [
+                        {
+                            "type": "invokeGloop",
+                            "label": "JSON",
+                            "name": "converters.csv.util.JsonInputStreamToCsv",
+                            "inputs": [
+                                {
+                                    "from": [
+                                        "multipartFile"
+                                    ],
+                                    "to": [
+                                        "multipartFile"
+                                    ]
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "from": [
+                                        "responseMultipartFile"
+                                    ],
+                                    "to": [
+                                        "responseMultipartFile"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "invokeGloop",
+                            "label": "XML",
+                            "name": "converters.csv.util.XmlInputStreamToCsv",
+                            "inputs": [
+                                {
+                                    "from": [
+                                        "multipartFile"
+                                    ],
+                                    "to": [
+                                        "multipartFile"
+                                    ]
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "from": [
+                                        "responseMultipartFile"
+                                    ],
+                                    "to": [
+                                        "responseMultipartFile"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "block",
+                            "label": "$else",
+                            "children": [
+                                {
+                                    "lines": [
+                                        {
+                                            "type": "set",
+                                            "expression": "fieldErrors {\n\tfieldName \"file-type\"\n\terrors \"Header not provided, or invalid value. Acceptable values are: JSON, XML\"\n}\n",
+                                            "evaluate": true,
+                                            "to": [
+                                                "apiException",
+                                                "fieldErrors"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "\"Invalid file-type header value: ${file_type}\"",
+                                            "evaluate": true,
+                                            "to": [
+                                                "apiException",
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "400",
+                                            "to": [
+                                                "apiException",
+                                                "httpErrorCode"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "FAILED",
+                                            "to": [
+                                                "apiException",
+                                                "result"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "400",
+                                            "to": [
+                                                "responseCode"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "invokeCode",
+                                    "className": "io.toro.martini.GloopMethods",
+                                    "methodName": "throwApiException",
+                                    "parameters": [
+                                        "io.toro.gloop.object.property.GloopModel"
+                                    ],
+                                    "inputs": [
+                                        {
+                                            "from": [
+                                                "apiException"
+                                            ],
+                                            "to": [
+                                                "apiException"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "catch": [
+                {
+                    "type": "invokeCode",
+                    "className": "io.toro.martini.LoggerMethods",
+                    "methodName": "error",
+                    "parameters": [
+                        "java.lang.String",
+                        "java.lang.Throwable"
+                    ],
+                    "inputs": [
+                        {
+                            "from": [
+                                "$gloopException",
+                                "gloopStackTrace"
+                            ],
+                            "to": [
+                                "message"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "$gloopException",
+                                "realException"
+                            ],
+                            "to": [
+                                "throwable"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

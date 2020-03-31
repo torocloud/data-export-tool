@@ -1,0 +1,163 @@
+{
+    "info": {
+        "version": "1.0.0-SNAPSHOT"
+    },
+    "basePath": "/data-export",
+    "paths": {
+        "/convert": {
+            "post": {
+                "consumes": [
+                    "application/json",
+                    "application/xml"
+                ],
+                "produces": [
+                    "application/json",
+                    "application/xml"
+                ],
+                "bodyParameter": {
+                    "name": "dataInput",
+                    "description": "dataInput"
+                },
+                "responses": {
+                    "-1": {
+                        "body": "dataOutput",
+                        "description": "The converted data"
+                    }
+                },
+                "operationType": "gloop",
+                "operationLocation": "converters.JsonXmlConverter"
+            }
+        },
+        "/export-json": {
+            "post": {
+                "consumes": [
+                    "application/xml"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "bodyParameter": {
+                    "name": "_xmlInput",
+                    "description": "_xmlInput"
+                },
+                "responses": {
+                    "-1": {
+                        "body": "multipartFile",
+                        "description": "The file object"
+                    }
+                },
+                "operationType": "gloop",
+                "operationLocation": "converters.json.XmlToJsonFile"
+            }
+        },
+        "/export-xml": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "bodyParameter": {
+                    "name": "_xml",
+                    "description": "_xml"
+                },
+                "responses": {
+                    "-1": {
+                        "body": "multipartFile",
+                        "description": "The file"
+                    }
+                },
+                "operationType": "gloop",
+                "operationLocation": "converters.xml.JsonToXmlFile"
+            }
+        },
+        "/export-csv": {
+            "post": {
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "parameters": [
+                    {
+                        "name": "multipartFile",
+                        "type": "FORM",
+                        "description": "The JSON file to be converted as CSV, Must be a JSON array with simple key-value pair structure"
+                    },
+                    {
+                        "name": "file_type",
+                        "type": "HEADER"
+                    }
+                ],
+                "responses": {
+                    "-1": {
+                        "body": "responseMultipartFile",
+                        "description": "The converted file"
+                    },
+                    "400": {
+                        "body": "apiException"
+                    }
+                },
+                "operationType": "gloop",
+                "operationLocation": "converters.csv.InputStreamToCsvConverter",
+                "responseCodeField": "responseCode"
+            }
+        },
+        "/export-excel": {
+            "post": {
+                "parameters": [
+                    {
+                        "name": "multipartFile",
+                        "type": "FORM",
+                        "description": "The JSON or XML file"
+                    },
+                    {
+                        "name": "file_type",
+                        "type": "HEADER"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "body": "responseMultipartFile",
+                        "description": "Successful response"
+                    },
+                    "400": {
+                        "body": "apiException",
+                        "description": "API Response if there's no supported file-type header value"
+                    },
+                    "500": {
+                        "body": "apiException",
+                        "description": "If an exception occred while processing th request"
+                    }
+                },
+                "operationType": "gloop",
+                "operationLocation": "converters.excel.ExcelConverter"
+            }
+        },
+        "/export-yaml": {
+            "post": {
+                "parameters": [
+                    {
+                        "name": "multipartFile",
+                        "type": "FORM",
+                        "description": "A JSON or XML file"
+                    },
+                    {
+                        "name": "file_type",
+                        "type": "HEADER",
+                        "description": "The file type of the file. Allowed values: JSON or XML"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "body": "responseMultipartFile",
+                        "description": "The converted file"
+                    },
+                    "400": {
+                        "body": "apiResponse",
+                        "description": "The error response if no file-type header provided, or file-type header does not have a supported value."
+                    }
+                },
+                "operationType": "gloop",
+                "operationLocation": "converters.yaml.InputStreamPayloadToYaml",
+                "responseCodeField": "responseCode"
+            }
+        }
+    }
+}

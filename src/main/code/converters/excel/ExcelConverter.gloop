@@ -1,0 +1,422 @@
+{
+    "input": [
+        {
+            "name": "multipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        },
+        {
+            "name": "file_type",
+            "alias": "file-type",
+            "choices": [
+                "JSON",
+                "XML"
+            ]
+        }
+    ],
+    "output": [
+        {
+            "name": "responseMultipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        },
+        {
+            "name": "responseCode",
+            "type": "integer",
+            "defaultValue": 200
+        },
+        {
+            "name": "apiException",
+            "type": "model",
+            "comments": "to throw",
+            "reference": "io.toro.martini.api.APIException",
+            "allowExtraProperties": true
+        }
+    ],
+    "steps": [
+        {
+            "type": "block",
+            "blockType": "TRY_CATCH",
+            "children": [
+                {
+                    "type": "invokeCode",
+                    "declare": [
+                        {
+                            "variables": [
+                                {
+                                    "name": "martiniPackage",
+                                    "type": "object",
+                                    "comments": "the current context's package",
+                                    "objectClassName": "io.toro.martini.ipackage.MartiniPackage"
+                                },
+                                {
+                                    "name": "modelTemplate",
+                                    "type": "model",
+                                    "array": true,
+                                    "allowExtraProperties": true
+                                },
+                                {
+                                    "name": "fileObject",
+                                    "type": "object",
+                                    "objectClassName": "java.io.File"
+                                },
+                                {
+                                    "name": "outputCursor",
+                                    "type": "object",
+                                    "objectClassName": "io.toro.gloop.object.cursor.GloopCursor"
+                                },
+                                {
+                                    "name": "outputCursorArray",
+                                    "type": "model",
+                                    "array": true,
+                                    "allowExtraProperties": true
+                                }
+                            ]
+                        }
+                    ],
+                    "className": "io.toro.martini.GroovyMethods",
+                    "methodName": "getPackage",
+                    "outputs": [
+                        {
+                            "from": [
+                                "output"
+                            ],
+                            "to": [
+                                "martiniPackage"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "new File( \"${martiniPackage.getInfo().home.toString()}/resources/${UUID.randomUUID()}.xls\" )",
+                            "evaluate": true,
+                            "to": [
+                                "fileObject"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "fork",
+                    "expression": "file_type",
+                    "children": [
+                        {
+                            "type": "invokeCode",
+                            "label": "JSON",
+                            "className": "io.toro.martini.JsonMethods",
+                            "methodName": "inputStreamToGloopObject",
+                            "parameters": [
+                                "java.io.InputStream"
+                            ],
+                            "inputs": [
+                                {
+                                    "from": [
+                                        "multipartFile",
+                                        "inputStream"
+                                    ],
+                                    "to": [
+                                        "jsonInputStream"
+                                    ]
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "from": [
+                                        "output"
+                                    ],
+                                    "to": [
+                                        "modelTemplate"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "block",
+                            "label": "XML",
+                            "children": [
+                                {
+                                    "type": "invokeCode",
+                                    "declare": [
+                                        {
+                                            "variables": [
+                                                {
+                                                    "name": "root",
+                                                    "type": "object",
+                                                    "objectClassName": "io.toro.gloop.object.property.GloopObject"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "className": "io.toro.martini.XmlMethods",
+                                    "methodName": "streamToGloopObject",
+                                    "parameters": [
+                                        "java.io.InputStream"
+                                    ],
+                                    "inputs": [
+                                        {
+                                            "from": [
+                                                "multipartFile",
+                                                "inputStream"
+                                            ],
+                                            "to": [
+                                                "_xmlString"
+                                            ]
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "type": "set",
+                                            "expression": "$gloopOutput.output.properties.value.getAt(\"${$gloopOutput.output.properties.value.keySet().toArray()[0]}\")",
+                                            "evaluate": true,
+                                            "to": [
+                                                "root"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "lines": [
+                                        {
+                                            "from": [
+                                                "root"
+                                            ],
+                                            "to": [
+                                                "modelTemplate"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "block",
+                            "label": "$else",
+                            "children": [
+                                {
+                                    "lines": [
+                                        {
+                                            "type": "set",
+                                            "expression": "fieldErrors {\n\tfieldName \"file-type\"\n\terrors \"Header not provided, or invalid value. Acceptable values are: JSON, XML\"\n}\n",
+                                            "evaluate": true,
+                                            "to": [
+                                                "apiException",
+                                                "fieldErrors"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "\"Invalid file-type header value: ${file_type}\"",
+                                            "evaluate": true,
+                                            "to": [
+                                                "apiException",
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "FAILED",
+                                            "to": [
+                                                "apiException",
+                                                "result"
+                                            ]
+                                        },
+                                        {
+                                            "type": "set",
+                                            "expression": "400",
+                                            "to": [
+                                                "apiException",
+                                                "httpErrorCode"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "invokeCode",
+                                    "className": "io.toro.martini.GloopMethods",
+                                    "methodName": "throwApiException",
+                                    "parameters": [
+                                        "io.toro.gloop.object.property.GloopModel"
+                                    ],
+                                    "inputs": [
+                                        {
+                                            "from": [
+                                                "apiException"
+                                            ],
+                                            "to": [
+                                                "apiException"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "invokeCode",
+                    "className": "io.toro.martini.FlatFileMethods",
+                    "methodName": "getExcelFileOutputCursor",
+                    "parameters": [
+                        "java.io.OutputStream",
+                        "java.lang.String",
+                        "io.toro.gloop.object.property.GloopModel",
+                        "java.lang.String[]",
+                        "boolean",
+                        "io.toro.gloop.engine.GloopExecutionContext"
+                    ],
+                    "inputs": [
+                        {
+                            "from": [
+                                "modelTemplate"
+                            ],
+                            "to": [
+                                "modelTemplate"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "fileObject.newOutputStream()",
+                            "evaluate": true,
+                            "to": [
+                                "flatFileData"
+                            ]
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "from": [
+                                "output"
+                            ],
+                            "to": [
+                                "outputCursorArray"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "iterate",
+                    "input": {
+                        "path": [
+                            "modelTemplate"
+                        ]
+                    },
+                    "output": {
+                        "path": [
+                            "outputCursorArray"
+                        ]
+                    },
+                    "children": [
+                        {
+                            "lines": [
+                                {
+                                    "from": [
+                                        "modelTemplate"
+                                    ],
+                                    "to": [
+                                        "outputCursorArray"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "lines": [
+                        {
+                            "from": [
+                                "fileObject"
+                            ],
+                            "to": [
+                                "responseMultipartFile",
+                                "inputStream"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "application/octet-stream",
+                            "to": [
+                                "responseMultipartFile",
+                                "contentType"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "fileObject.length()",
+                            "evaluate": true,
+                            "to": [
+                                "responseMultipartFile",
+                                "size"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "fileObject.getName()",
+                            "evaluate": true,
+                            "to": [
+                                "responseMultipartFile",
+                                "originalFileName"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "catch": [
+                {
+                    "lines": [
+                        {
+                            "type": "set",
+                            "expression": "500",
+                            "to": [
+                                "responseCode"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "FAILED",
+                            "to": [
+                                "apiException",
+                                "result"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "An error occurred while processing the request",
+                            "to": [
+                                "apiException",
+                                "message"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "invokeCode",
+                    "className": "io.toro.martini.LoggerMethods",
+                    "methodName": "error",
+                    "parameters": [
+                        "java.lang.String",
+                        "java.lang.Throwable"
+                    ],
+                    "inputs": [
+                        {
+                            "from": [
+                                "$gloopException",
+                                "realException"
+                            ],
+                            "to": [
+                                "throwable"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "$gloopException",
+                                "gloopStackTrace"
+                            ],
+                            "to": [
+                                "message"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

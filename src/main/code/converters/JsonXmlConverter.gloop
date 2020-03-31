@@ -1,0 +1,30 @@
+{
+    "input": [
+        {
+            "name": "dataInput",
+            "type": "model",
+            "allowExtraProperties": true
+        }
+    ],
+    "output": [
+        {
+            "name": "dataOutput",
+            "type": "model",
+            "allowExtraProperties": true
+        }
+    ],
+    "steps": [
+        {
+            "lines": [
+                {
+                    "from": [
+                        "dataInput"
+                    ],
+                    "to": [
+                        "dataOutput"
+                    ]
+                }
+            ]
+        }
+    ]
+}

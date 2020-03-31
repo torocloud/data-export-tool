@@ -1,0 +1,141 @@
+{
+    "input": [
+        {
+            "name": "multipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        }
+    ],
+    "output": [
+        {
+            "name": "responseMultipartFile",
+            "type": "model",
+            "reference": "io.toro.martini.http.MultipartFile"
+        }
+    ],
+    "steps": [
+        {
+            "type": "block",
+            "blockType": "TRY_CATCH",
+            "children": [
+                {
+                    "type": "invokeCode",
+                    "declare": [
+                        {
+                            "variables": [
+                                {
+                                    "name": "martiniPackage",
+                                    "type": "object",
+                                    "comments": "the current context's package",
+                                    "objectClassName": "io.toro.martini.ipackage.MartiniPackage"
+                                },
+                                {
+                                    "name": "fileObject",
+                                    "type": "object",
+                                    "objectClassName": "java.io.File"
+                                },
+                                {
+                                    "name": "filename"
+                                }
+                            ]
+                        }
+                    ],
+                    "className": "io.toro.martini.GroovyMethods",
+                    "methodName": "getPackage",
+                    "outputs": [
+                        {
+                            "from": [
+                                "output"
+                            ],
+                            "to": [
+                                "martiniPackage"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "UUID.randomUUID()",
+                            "evaluate": true,
+                            "to": [
+                                "filename"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "gloovy",
+                    "gloovyScript": "import com.fasterxml.jackson.databind.JsonNode\nimport com.fasterxml.jackson.databind.ObjectMapper\nimport com.fasterxml.jackson.dataformat.csv.CsvSchema\nimport com.fasterxml.jackson.dataformat.csv.CsvMapper\nimport com.fasterxml.jackson.dataformat.csv.CsvSchema.Builder\n\n//InputStream io = multipartFile.inputStream\n\nJsonNode jsonTree = new ObjectMapper().readTree( multipartFile.inputStream )\n\nBuilder csvSchemaBuilder = CsvSchema.builder()\nJsonNode firstObject = jsonTree.elements().next()\n\nfirstObject.fieldNames().forEachRemaining( fieldName -> { csvSchemaBuilder.addColumn(fieldName) } )\n\nCsvSchema csvSchema = csvSchemaBuilder.build().withHeader()\n\nCsvMapper csvMapper = new CsvMapper()\n\nFile f = new File( \"${martiniPackage.getInfo().home.toString()}/resources/${filename}.csv\" )\n\ncsvMapper.writerFor( JsonNode.class )\n  .with( csvSchema )\n  .writeValue( f, jsonTree )\n  \nfileObject = f\nfilename = f.getName()"
+                },
+                {
+                    "lines": [
+                        {
+                            "from": [
+                                "filename"
+                            ],
+                            "to": [
+                                "responseMultipartFile",
+                                "originalFileName"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "fileObject"
+                            ],
+                            "to": [
+                                "responseMultipartFile",
+                                "inputStream"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "fileObject.length()",
+                            "evaluate": true,
+                            "to": [
+                                "responseMultipartFile",
+                                "size"
+                            ]
+                        },
+                        {
+                            "type": "set",
+                            "expression": "application/octet-stream",
+                            "to": [
+                                "responseMultipartFile",
+                                "contentType"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "catch": [
+                {
+                    "type": "invokeCode",
+                    "className": "io.toro.martini.LoggerMethods",
+                    "methodName": "error",
+                    "parameters": [
+                        "java.lang.String",
+                        "java.lang.Throwable"
+                    ],
+                    "inputs": [
+                        {
+                            "from": [
+                                "$gloopException",
+                                "realException"
+                            ],
+                            "to": [
+                                "throwable"
+                            ]
+                        },
+                        {
+                            "from": [
+                                "$gloopException",
+                                "gloopStackTrace"
+                            ],
+                            "to": [
+                                "message"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
