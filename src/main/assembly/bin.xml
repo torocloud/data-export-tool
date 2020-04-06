@@ -11,8 +11,8 @@
             <outputDirectory>conf</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>src/main/jar</directory>
-            <outputDirectory>jar</outputDirectory>
+            <directory>src/main/lib</directory>
+            <outputDirectory>lib</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>src/main/data</directory>
@@ -36,4 +36,14 @@
             <outputDirectory> resources </outputDirectory>
         </fileSet>
     </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <includes>
+                <include>com.fasterxml.jackson.dataformat:jackson-dataformat-csv</include>
+            </includes>
+            <useTransitiveFiltering>false</useTransitiveFiltering>
+            <useProjectArtifact>false</useProjectArtifact>
+        </dependencySet>
+    </dependencySets>
 </assembly>

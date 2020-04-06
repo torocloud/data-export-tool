@@ -1,4 +1,4 @@
-<package stateOnStartup="started" id="data-export-tool" version="1.0.0-SNAPSHOT" context-path="/data-export-tool">
+<package stateOnStartup="started" id="data-export-tool" version="1.0.0" context-path="/data-export-tool">
   <package-dependencies/>
   <startup-services/>
   <shutdown-services/>

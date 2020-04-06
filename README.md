@@ -11,7 +11,11 @@ API that allows you to export your JSON or XML file into Martini supported file 
 ```
 $ mvn clean package
 ```
-This will create a ZIP file named `data-export-tool-bin.zip` containing all the files (services, configurations, etc.) needed under the `target` folder. This ZIP file is what we call a [Martini Package](https://docs.torocloud.com/martini/latest/developing/package/) which then you can import in Martini Desktop to get started. You can learn more how to import a Martini Package by visiting our [documentation](https://docs.torocloud.com/martini/latest/developing/package/importing/)
+This will create a ZIP file named `data-export-tool.zip` containing all the files (services, configurations, etc.) needed under the `target` folder. This ZIP file is what we call a [Martini Package](https://docs.torocloud.com/martini/latest/developing/package/) which then you can import in Martini Desktop to get started. You can learn more how to import a Martini Package by visiting our [documentation](https://docs.torocloud.com/martini/latest/developing/package/importing/)
+
+### Getting the Martini Package from TORO Marketplace
+
+You can also get this package via TORO Marketplace. See our documentation on [How to import a Martini Package from Marketplace](https://docs.torocloud.com/martini/latest/developing/package/importing/#from-the-marketplace).
 
 ### Usage
 This package exposes operations for a simple export tool REST API that allows you to transform your JSON or XML files into Martini supported file formats. You can find the [Gloop REST API](https://docs.torocloud.com/martini/latest/developing/gloop/api/rest/) file at `/api/Converter` under the `code` folder after importing the package to your Martini Desktop application.

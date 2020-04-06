@@ -12,8 +12,17 @@
     <version>1.0.0</version>
 
     <properties>
-        <rootDir>${basedir}/..</rootDir>
+        <rootDir>${basedir}</rootDir>
     </properties>
+
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-csv -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-csv</artifactId>
+            <version>2.10.3</version>
+        </dependency>
+    </dependencies>
     
     <build>
         <plugins>
@@ -23,12 +32,34 @@
                 <configuration>
                     <descriptor>src/main/assembly/bin.xml</descriptor>
                     <finalName>${project.artifactId}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <ant antfile="${rootDir}/src/main/assembly/build.xml">
+                                    <property name="currentVersion" value="${project.version}"/>
+                                    <property name="targetDir" value="${pom.basedir}"/>
+                                    <target name="embed.version"/>
+                                </ant>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
                         </goals>
                     </execution>
                 </executions>
